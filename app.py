@@ -5,8 +5,7 @@ from ingredient_utils import parse_ingredient, combine_ingredients, format_ingre
 from collections import defaultdict
 import re
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
+from google.oauth2.service_account import Credentials
 # --- 人数抽出関数 ---
 def extract_people_count(yield_text):
     match = re.search(r'(\d+)', yield_text)
@@ -19,8 +18,12 @@ def write_to_spreadsheet(sheet_url, combined_list, extras):
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-    client = gspread.authorize(creds)
+
+    credentials = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"],
+        scopes=scope
+    )
+    client = gspread.authorize(credentials)
     sheet = client.open_by_url(sheet_url)
     worksheet = sheet.sheet1
 
