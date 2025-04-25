@@ -57,7 +57,7 @@ def write_to_spreadsheet(sheet_url, combined_list, extras):
 
 # --- Streamlit アプリ本体 ---
 st.title("🍳 材料リスト作成ツール")
-st.write("レシピURLを入力すると、必要な材料のリストを作成します。クラシルとデリッシュキッチンに対応しています。\n\n出力シートがなくても材料計算は可能です。")
+st.write("レシピURLを入力すると、必要な材料のリストを作成します。クラシルとデリッシュキッチンに対応しています。\n\n出力シートがなくても材料計算は可能です。分量にはメッセージも書けます。例:もしあれば...")
 
 # 初期化
 if "recipe_count" not in st.session_state:
