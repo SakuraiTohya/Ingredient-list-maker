@@ -33,8 +33,21 @@ def write_to_spreadsheet(sheet_url, combined_list, extras):
 
     data = []
 
-    for name, quantity in combined_list:
+    for line in combined_list:
+        if isinstance(line, list) and len(line) == 2:
+            name, quantity = line
+        elif isinstance(line, str):
+            parts = line.split()
+            if len(parts) >= 2:
+                name = parts[0]
+                quantity = "".join(parts[1:])
+            else:
+                continue
+        else:
+            continue
+        
         data.append([name, quantity])
+
 
 
     for item in extras:
