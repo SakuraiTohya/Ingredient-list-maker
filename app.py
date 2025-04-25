@@ -32,12 +32,10 @@ def write_to_spreadsheet(sheet_url, combined_list, extras):
     worksheet.update(range_name='A1:B1', values=[["材料名", "分量"]])
 
     data = []
-    for line in combined_list:
-        parts = line.split()
-        if len(parts) >= 2:
-            name = parts[0]
-            quantity = "".join(parts[1:])
-            data.append([name, quantity])
+
+    for name, quantity in combined_list:
+        data.append([name, quantity])
+
 
     for item in extras:
         data.append([item, "適量または少々"])
