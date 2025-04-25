@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 from kurashiru_scraper import get_recipe_info_from_kurashiru
 from delishkitchen_scraper import get_recipe_info_from_delishkitchen
 from ingredient_utils import parse_ingredient, combine_ingredients, format_ingredient_summary
@@ -6,6 +6,7 @@ from collections import defaultdict
 import re
 import gspread
 from google.oauth2.service_account import Credentials
+
 # --- 人数抽出関数 ---
 def extract_people_count(yield_text):
     match = re.search(r'(\d+)', yield_text)
@@ -45,31 +46,39 @@ def write_to_spreadsheet(sheet_url, combined_list, extras):
 
 # --- Streamlit アプリ本体 ---
 st.title("🍳 材料リスト作成ツール")
-st.write("レシピURLを入力すると、必要な材料のリストを作成します。クラシルとデリッシュキッチンに対応しています。")
+st.write("レシピURLを入力すると、必要な材料のリストを作成します。クラシルとデリッシュキッチンに対応しています。\n\n出力シートがなくても材料計算は可能です。")
 
 # 初期化
 if "recipe_count" not in st.session_state:
     st.session_state.recipe_count = 1
-
-# レシピ追加ボタン
-if st.button("➕ レシピURLを追加"):
-    st.session_state.recipe_count += 1
+if "combined_list" not in st.session_state:
+    st.session_state["combined_list"] = []
+if "extra_ingredients" not in st.session_state:
+    st.session_state["extra_ingredients"] = []
 
 # レシピ入力欄の表示
+st.subheader("📅 レシピ入力")
 recipe_urls = []
 num_people = []
+recipe_names = []  
 
-st.subheader("📥 レシピ入力")
 for i in range(st.session_state.recipe_count):
+    st.markdown(f"### 🍽️ レシピ #{i+1}")
+    name = st.text_input(f"料理名", key=f"recipe_title_{i}")
     cols = st.columns(2)
     with cols[0]:
-        url = st.text_input(f"レシピURL #{i+1}", key=f"url_{i}")
+        url = st.text_input(f"レシピURL ", key=f"url_{i}")
     with cols[1]:
-        people = st.number_input(f"作りたい人数 #{i+1}", min_value=1, step=1, value=2, key=f"people_{i}")
+        people = st.number_input(f"作りたい人数 ", min_value=1, step=1, value=2, key=f"people_{i}")
 
     if url:
         recipe_urls.append(url)
         num_people.append(people)
+        recipe_names.append(name)  
+
+# レシピ追加ボタン
+if st.button("➕ レシピURLを追加"):
+    st.session_state.recipe_count += 1
 
 # スプレッドシートURL
 st.subheader("📤 出力先スプレッドシートのURL")
@@ -81,7 +90,6 @@ if st.button("✅ 買い物リストを作成"):
     extra_ingredients = []
 
     for url, target in zip(recipe_urls, num_people):
-        # --- URLに応じて使用する関数を分ける ---
         if "kurashiru" in url:
             info = get_recipe_info_from_kurashiru(url)
         elif "delishkitchen" in url:
@@ -105,19 +113,45 @@ if st.button("✅ 買い物リストを作成"):
             else:
                 all_combined[(name, unit)] += amount * multiplier
 
-
-
     combined_list = format_ingredient_summary(all_combined)
 
-    st.subheader("🛒 合計買い物リスト")
-    for line in combined_list:
-        st.write("-", line)
+    # セッションに保存
+    st.session_state["combined_list"] = combined_list
+    st.session_state["extra_ingredients"] = extra_ingredients
+    st.session_state["show_editor"] = True
 
-    if extra_ingredients:
-        st.subheader("🧂 分量不明（適量・少々など）")
-        for item in extra_ingredients:
-            st.write("-", item)
+# 材料表示と編集
+if st.session_state.get("show_editor", False):
+    st.subheader("✅ スプレッドシートに出力する材料を選んで編集")
 
-    if sheet_url:
-        write_to_spreadsheet(sheet_url, combined_list, extra_ingredients)
-        st.success("✅ スプレッドシートに出力しました！")
+    editable_items = []
+    for i, line in enumerate(st.session_state["combined_list"]):
+        parts = line.split()
+        if len(parts) >= 2:
+            name = parts[0]
+            quantity = "".join(parts[1:])
+            col1, col2, col3 = st.columns([3, 3, 2])
+            with col1:
+                new_name = st.text_input("材料名", value=name, key=f"ingredient_name_{i}")
+            with col2:
+                new_quantity = st.text_input("量", value=quantity, key=f"ingredient_amount_{i}")
+            with col3:
+                use_item = st.checkbox("出力", key=f"ingredient_use_{i}", value=True)
+            if use_item:
+                editable_items.append([new_name, new_quantity])
+
+    selected_extras = []
+    if "extra_ingredients" in st.session_state:
+        st.subheader("😲 分量不明（適量・少々など）")
+        for i, item in enumerate(st.session_state["extra_ingredients"]):
+            col1, col2 = st.columns([6, 2])
+            with col1:
+                st.write(f"・{item}")
+            with col2:
+                use = st.checkbox("出力", value=True, key=f"extra_{i}")
+            if use:
+                selected_extras.append(item)
+
+        if sheet_url and st.button("📤 この内容でスプレッドシートに出力する", key="submit_button"):
+            write_to_spreadsheet(sheet_url, editable_items, selected_extras)
+            st.success("✅ スプレッドシートに出力しました！")
