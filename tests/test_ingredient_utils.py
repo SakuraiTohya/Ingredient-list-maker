@@ -2,7 +2,8 @@
 材料ユーティリティのテスト
 """
 
-from src.utils.ingredient_utils import parse_ingredient, convert_mixed_number, combine_ingredients
+from src.utils.ingredient_utils import (combine_ingredients,
+                                        convert_mixed_number, parse_ingredient)
 
 
 class TestConvertMixedNumber:

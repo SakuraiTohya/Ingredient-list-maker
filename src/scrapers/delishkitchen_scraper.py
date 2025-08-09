@@ -2,9 +2,10 @@
 Delish Kitchen scraper - デリッシュキッチンからレシピ情報を取得するモジュール
 """
 
+from typing import Any, Dict, Optional
+
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional, Dict, Any
 
 
 def get_recipe_info_from_delishkitchen(url: str) -> Optional[Dict[str, Any]]:

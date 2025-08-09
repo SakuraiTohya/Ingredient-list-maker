@@ -2,21 +2,20 @@
 メインアプリケーション - Streamlitアプリのメイン処理
 """
 
-import streamlit as st
-import sys
 import os
+import sys
 from collections import defaultdict
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
+
+import streamlit as st
 
 # プロジェクトのルートディレクトリをパスに追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-from src.scrapers import get_recipe_info_from_kurashiru, get_recipe_info_from_delishkitchen
-from src.utils import (
-    parse_ingredient,
-    format_ingredient_summary,
-    extract_people_count,
-)
+from src.scrapers import (get_recipe_info_from_delishkitchen,
+                          get_recipe_info_from_kurashiru)
+from src.utils import (extract_people_count, format_ingredient_summary,
+                       parse_ingredient)
 from src.utils.sheet_utils import write_to_spreadsheet
 
 

@@ -2,10 +2,11 @@
 Kurashiru scraper - クラシルからレシピ情報を取得するモジュール
 """
 
+import json
+from typing import Any, Dict, Optional
+
 import requests
 from bs4 import BeautifulSoup
-import json
-from typing import Optional, Dict, Any
 
 
 def get_recipe_info_from_kurashiru(url: str) -> Optional[Dict[str, Any]]:

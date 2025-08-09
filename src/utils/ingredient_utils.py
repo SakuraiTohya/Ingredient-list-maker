@@ -3,9 +3,9 @@ Ingredient utilities - 材料の解析・結合・フォーマット機能
 """
 
 import re
-from fractions import Fraction
 from collections import defaultdict
-from typing import Tuple, Optional, Dict, List
+from fractions import Fraction
+from typing import Dict, List, Optional, Tuple
 
 
 def convert_mixed_number(s: str) -> Optional[float]:

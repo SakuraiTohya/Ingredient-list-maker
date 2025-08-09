@@ -2,10 +2,11 @@
 Spreadsheet utilities - Googleスプレッドシートへの出力機能
 """
 
-import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
 from typing import List
+
+import gspread
+import streamlit as st
+from google.oauth2.service_account import Credentials
 
 
 def write_to_spreadsheet(sheet_url: str, combined_list: List[List[str]], extras: List[str]) -> None:
