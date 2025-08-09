@@ -1,12 +1,22 @@
 # 🛒 Ingredient List Maker for Recipes
 
-このアプリは、**クラシル（kurashiru）とデリッシュキッチン（delish kitchen）**のレシピURLをもとに、  
-複数人分の材料を合算して買い物リストを自動生成し、**Googleスプレッドシートに出力できる**Streamlitアプリです。
+**複数のレシピサイトから材料を自動抽出し、買い物リストを生成するWebアプリケーション**
 
----
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://python.org)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.0+-red.svg)](https://streamlit.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-## 🚀 アプリを見る  
-📍[アプリを使ってみる](https://ingredient-list-maker-dj2ly2z54u7u3wquznrcih.streamlit.app/)
+このアプリは、**クラシル（kurashiru）とデリッシュキッチン（delish kitchen）**のレシピURLから材料情報を自動的に抽出し、複数人分の材料を合算して買い物リストを生成します。生成されたリストは**Googleスプレッドシートに自動出力**することも可能です。
+
+## 🚀 ライブデモ  
+📍[アプリを試してみる](https://ingredient-list-maker-dj2ly2z54u7u3wquznrcih.streamlit.app/)
+
+## 🎯 プロジェクトの特徴
+
+- **モジュラー設計**: 機能ごとに分離された保守しやすいコード構造
+- **型安全性**: TypeScript風の型ヒントによる堅牢な実装
+- **テスト駆動開発**: pytestによる包括的なユニットテスト
+- **CI/CD対応**: 自動化されたテストとデプロイメント準備完了
 
 ---
 
@@ -36,11 +46,24 @@
 
 ## 📦 使用技術
 
-- [Streamlit](https://streamlit.io/)  
-- [gspread](https://github.com/burnash/gspread)  
-- Google Sheets API（+ Google Service Account）  
-- Webスクレイピング（[BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)）  
-- Python標準ライブラリ（re, urllib, pandas など）
+- **Frontend**: [Streamlit](https://streamlit.io/) - モダンなWebアプリフレームワーク
+- **Scraping**: [BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/) + [Requests](https://requests.readthedocs.io/) - 効率的なWebスクレイピング
+- **API Integration**: [gspread](https://github.com/burnash/gspread) + Google Sheets API - クラウドデータ連携
+- **Testing**: [pytest](https://pytest.org/) - 包括的なユニットテスト
+- **Code Quality**: [black](https://black.readthedocs.io/), [flake8](https://flake8.pycqa.org/), [mypy](https://mypy.readthedocs.io/) - コード品質管理
+
+## 🏗️ アーキテクチャ
+
+```
+src/
+├── scrapers/     # レシピサイト別スクレイピング機能
+├── utils/        # 共通ユーティリティ（材料解析、スプレッドシート操作）
+tests/            # 包括的なユニットテスト
+config/           # アプリケーション設定
+docs/             # 技術文書・API仕様
+```
+
+詳細は [アーキテクチャ文書](docs/architecture.md) をご覧ください。
 
 ---
 
