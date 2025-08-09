@@ -1,10 +1,22 @@
+"""
+Ingredient utilities - 材料の解析・結合・フォーマット機能
+"""
+
 import re
 from fractions import Fraction
 from collections import defaultdict
+from typing import Tuple, Optional, Dict, List
 
-def convert_mixed_number(s):
+
+def convert_mixed_number(s: str) -> Optional[float]:
     """
-    '2と1/2', '1/3', '1.5' などを float に変換。
+    '2と1/2', '1/3', '1.5' などを float に変換
+    
+    Args:
+        s (str): 変換する文字列
+        
+    Returns:
+        Optional[float]: 変換された数値、変換失敗時はNone
     """
     s = s.replace('．', '.').replace('・', '/').replace('／', '/').strip()
 
@@ -23,12 +35,19 @@ def convert_mixed_number(s):
     # 通常の数字
     try:
         return float(s)
-    except:
+    except ValueError:
         return None
 
-def parse_ingredient(item):
+
+def parse_ingredient(item: str) -> Tuple[str, Optional[float], str]:
     """
-    例: '醤油 大さじ1.5' → ('醤油', 1.5, '大さじ')
+    材料文字列を解析して名前、分量、単位に分離
+    
+    Args:
+        item (str): 材料の文字列（例: '醤油 大さじ1.5'）
+        
+    Returns:
+        Tuple[str, Optional[float], str]: (材料名, 分量, 単位)
     """
     item = item.strip()
 
@@ -45,10 +64,21 @@ def parse_ingredient(item):
         amount = convert_mixed_number(number_part)
         return name, amount, unit
     else:
-        return str(item).strip(), None, None
+        return str(item).strip(), None, ""
 
 
-def combine_ingredients(parsed_ingredients, multiplier=1.0):
+def combine_ingredients(parsed_ingredients: List[Tuple[str, Optional[float], str]], 
+                       multiplier: float = 1.0) -> Dict[Tuple[str, str], float]:
+    """
+    解析済み材料リストを結合して合計分量を計算
+    
+    Args:
+        parsed_ingredients: 解析済み材料のリスト
+        multiplier: 人数倍率
+        
+    Returns:
+        Dict[Tuple[str, str], float]: (材料名, 単位) -> 合計分量の辞書
+    """
     result = defaultdict(float)
     for name, amount, unit in parsed_ingredients:
         if amount is None:
@@ -56,7 +86,17 @@ def combine_ingredients(parsed_ingredients, multiplier=1.0):
         result[(name, unit)] += amount * multiplier
     return result
 
-def format_ingredient_summary(combined):
+
+def format_ingredient_summary(combined: Dict[Tuple[str, str], float]) -> List[str]:
+    """
+    結合された材料辞書を表示用文字列リストに変換
+    
+    Args:
+        combined: 結合された材料辞書
+        
+    Returns:
+        List[str]: フォーマット済み材料リスト
+    """
     output = []
     prefix_units = ["大さじ", "小さじ"]  # 単位が前に来るもの
 

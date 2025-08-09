@@ -1,148 +1,101 @@
-import streamlit as st 
-from kurashiru_scraper import get_recipe_info_from_kurashiru
-from delishkitchen_scraper import get_recipe_info_from_delishkitchen
-from ingredient_utils import parse_ingredient, combine_ingredients, format_ingredient_summary
-from collections import defaultdict
-import re
-import gspread
-from google.oauth2.service_account import Credentials
+"""
+メインアプリケーション - Streamlitアプリのメイン処理
+"""
 
-# --- 人数抽出関数 ---
-def extract_people_count(yield_text):
-    match = re.search(r'(\d+)', yield_text)
-    return int(match.group(1)) if match else 1
+import streamlit as st
+import sys
+import os
 
-# --- スプレッドシート出力関数 ---
-def write_to_spreadsheet(sheet_url, combined_list, extras):
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
+# プロジェクトのルートディレクトリをパスに追加
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-    credentials = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
-        scopes=scope
-    )
-    client = gspread.authorize(credentials)
-    sheet = client.open_by_url(sheet_url)
-    worksheet = sheet.sheet1
-
-    worksheet.clear()
-    worksheet.update(range_name='A1:B1', values=[["材料名", "分量"]])
-
-    data = []
-
-    for line in combined_list:
-        if isinstance(line, list) and len(line) == 2:
-            name, quantity = line
-        elif isinstance(line, str):
-            parts = line.split()
-            if len(parts) >= 2:
-                name = parts[0]
-                quantity = "".join(parts[1:])
-            else:
-                continue
-        else:
-            continue
-        
-        data.append([name, quantity])
-
-
-
-    for item in extras:
-        data.append([item, "適量または少々"])
-
-    worksheet.update(range_name=f"A2:B{len(data)+1}", values=data)
-
-# --- Streamlit アプリ本体 ---
-st.title("🍳 材料リスト作成ツール")
-st.write(
-    "レシピのURLを入力すると、必要な材料のリストを作成します。"
-    "クラシルとデリッシュキッチンに対応しています。\n\n"
-    "出力用のスプレッドシートがなくても材料の計算は可能です。"
-    "分量は文字列、数値に対応してます。"
+from src.scrapers import get_recipe_info_from_kurashiru, get_recipe_info_from_delishkitchen
+from src.utils import (
+    parse_ingredient, combine_ingredients, format_ingredient_summary,
+    extract_people_count
 )
+from src.utils.sheet_utils import write_to_spreadsheet
+from collections import defaultdict
+from typing import List, Tuple
 
 
-# 初期化
-if "recipe_count" not in st.session_state:
-    st.session_state.recipe_count = 1
-if "combined_list" not in st.session_state:
-    st.session_state["combined_list"] = []
-if "extra_ingredients" not in st.session_state:
-    st.session_state["extra_ingredients"] = []
+def initialize_session_state() -> None:
+    """セッション状態を初期化"""
+    if "recipe_count" not in st.session_state:
+        st.session_state.recipe_count = 1
+    if "combined_list" not in st.session_state:
+        st.session_state["combined_list"] = []
+    if "extra_ingredients" not in st.session_state:
+        st.session_state["extra_ingredients"] = []
 
-# レシピ入力欄の表示
-st.subheader("📅 レシピ入力")
-recipe_urls = []
-num_people = []
-recipe_names = []  
 
-for i in range(st.session_state.recipe_count):
-    st.markdown(f"### 🍽️ レシピ #{i+1}")
-    name = st.text_input(f"料理名", key=f"recipe_title_{i}")
-    cols = st.columns(2)
-    with cols[0]:
-        url = st.text_input(f"レシピURL ", key=f"url_{i}")
-    with cols[1]:
-        people = st.number_input(f"作りたい人数 ", min_value=1, step=1, value=2, key=f"people_{i}")
+def collect_recipe_inputs() -> Tuple[List[str], List[int], List[str]]:
+    """レシピ入力を収集"""
+    recipe_urls = []
+    num_people = []
+    recipe_names = []
 
-    if url:
-        recipe_urls.append(url)
-        num_people.append(people)
-        recipe_names.append(name)  
+    for i in range(st.session_state.recipe_count):
+        st.markdown(f"### 🍽️ レシピ #{i+1}")
+        name = st.text_input(f"料理名", key=f"recipe_title_{i}")
+        cols = st.columns(2)
+        with cols[0]:
+            url = st.text_input(f"レシピURL ", key=f"url_{i}")
+        with cols[1]:
+            people = st.number_input(f"作りたい人数 ", min_value=1, step=1, value=2, key=f"people_{i}")
 
-# レシピ追加ボタン
-if st.button("➕ レシピURLを追加"):
-    st.session_state.recipe_count += 1
+        if url:
+            recipe_urls.append(url)
+            num_people.append(people)
+            recipe_names.append(name)
 
-# スプレッドシートURL
-st.subheader("📤 出力先スプレッドシートのURL")
-sheet_url = st.text_input("スプレッドシートURLを入力してください")
+    return recipe_urls, num_people, recipe_names
 
-# 実行ボタン
-if st.button("✅ 買い物リストを作成"):
+
+def process_recipes(recipe_urls: List[str], num_people: List[int]) -> Tuple[List[str], List[str]]:
+    """レシピを処理して材料リストを生成"""
     all_combined = defaultdict(float)
     extra_ingredients = []
 
     for url, target in zip(recipe_urls, num_people):
-        if "kurashiru" in url:
-            info = get_recipe_info_from_kurashiru(url)
-        elif "delishkitchen" in url:
-            info = get_recipe_info_from_delishkitchen(url)
-        else:
-            st.warning(f"未対応のURL形式です: {url}")
-            continue
-
-        if not info:
-            st.warning(f"データ取得失敗: {url}")
-            continue
-
-        ingredients_raw = info["ingredients"]
-        base_people = extract_people_count(info["yield"])
-        multiplier = target / base_people if base_people > 0 else 1.0
-
-        parsed = [parse_ingredient(item) for item in ingredients_raw]
-        for name, amount, unit in parsed:
-            if amount is None:
-                extra_ingredients.append(name)
+        try:
+            if "kurashiru" in url:
+                info = get_recipe_info_from_kurashiru(url)
+            elif "delishkitchen" in url:
+                info = get_recipe_info_from_delishkitchen(url)
             else:
-                all_combined[(name, unit)] += amount * multiplier
+                st.warning(f"未対応のURL形式です: {url}")
+                continue
+
+            if not info:
+                st.warning(f"データ取得失敗: {url}")
+                continue
+
+            ingredients_raw = info["ingredients"]
+            base_people = extract_people_count(info["yield"])
+            multiplier = target / base_people if base_people > 0 else 1.0
+
+            parsed = [parse_ingredient(item) for item in ingredients_raw]
+            for name, amount, unit in parsed:
+                if amount is None:
+                    extra_ingredients.append(name)
+                else:
+                    all_combined[(name, unit)] += amount * multiplier
+
+        except Exception as e:
+            st.error(f"レシピ処理中にエラーが発生しました: {url} - {str(e)}")
+            continue
 
     combined_list = format_ingredient_summary(all_combined)
+    return combined_list, extra_ingredients
 
-    # セッションに保存
-    st.session_state["combined_list"] = combined_list
-    st.session_state["extra_ingredients"] = extra_ingredients
-    st.session_state["show_editor"] = True
 
-# 材料表示と編集
-if st.session_state.get("show_editor", False):
+def render_ingredient_editor(combined_list: List[str], extra_ingredients: List[str]) -> Tuple[List[List[str]], List[str]]:
+    """材料編集UIを表示"""
     st.subheader("✅ スプレッドシートに出力する材料を選んで編集")
 
     editable_items = []
-    for i, line in enumerate(st.session_state["combined_list"]):
+    for i, line in enumerate(combined_list):
         parts = line.split()
         if len(parts) >= 2:
             name = parts[0]
@@ -158,9 +111,9 @@ if st.session_state.get("show_editor", False):
                 editable_items.append([new_name, new_quantity])
 
     selected_extras = []
-    if "extra_ingredients" in st.session_state:
+    if extra_ingredients:
         st.subheader("😲 分量不明（適量・少々など）")
-        for i, item in enumerate(st.session_state["extra_ingredients"]):
+        for i, item in enumerate(extra_ingredients):
             col1, col2 = st.columns([6, 2])
             with col1:
                 st.write(f"・{item}")
@@ -169,6 +122,71 @@ if st.session_state.get("show_editor", False):
             if use:
                 selected_extras.append(item)
 
+    return editable_items, selected_extras
+
+
+def main():
+    """メイン関数"""
+    st.set_page_config(
+        page_title="材料リスト作成ツール",
+        page_icon="🍳",
+        layout="wide"
+    )
+    
+    st.title("🍳 材料リスト作成ツール")
+    st.write(
+        "レシピのURLを入力すると、必要な材料のリストを作成します。"
+        "クラシルとデリッシュキッチンに対応しています。\n\n"
+        "出力用のスプレッドシートがなくても材料の計算は可能です。"
+        "分量は文字列、数値に対応してます。"
+    )
+
+    # セッション状態を初期化
+    initialize_session_state()
+
+    # レシピ入力欄の表示
+    st.subheader("📅 レシピ入力")
+    recipe_urls, num_people, recipe_names = collect_recipe_inputs()
+
+    # レシピ追加ボタン
+    if st.button("➕ レシピURLを追加"):
+        st.session_state.recipe_count += 1
+        st.rerun()
+
+    # スプレッドシートURL
+    st.subheader("📤 出力先スプレッドシートのURL")
+    sheet_url = st.text_input("スプレッドシートURLを入力してください")
+
+    # 実行ボタン
+    if st.button("✅ 買い物リストを作成"):
+        if not recipe_urls:
+            st.warning("レシピURLを入力してください。")
+            return
+
+        with st.spinner("レシピを処理中..."):
+            combined_list, extra_ingredients = process_recipes(recipe_urls, num_people)
+
+        # セッションに保存
+        st.session_state["combined_list"] = combined_list
+        st.session_state["extra_ingredients"] = extra_ingredients
+        st.session_state["show_editor"] = True
+        st.rerun()
+
+    # 材料表示と編集
+    if st.session_state.get("show_editor", False):
+        editable_items, selected_extras = render_ingredient_editor(
+            st.session_state["combined_list"],
+            st.session_state["extra_ingredients"]
+        )
+
         if sheet_url and st.button("📤 この内容でスプレッドシートに出力する", key="submit_button"):
-            write_to_spreadsheet(sheet_url, editable_items, selected_extras)
-            st.success("✅ スプレッドシートに出力しました！")
+            try:
+                with st.spinner("スプレッドシートに出力中..."):
+                    write_to_spreadsheet(sheet_url, editable_items, selected_extras)
+                st.success("✅ スプレッドシートに出力しました！")
+            except Exception as e:
+                st.error(f"出力に失敗しました: {str(e)}")
+
+
+if __name__ == "__main__":
+    main()
