@@ -12,10 +12,8 @@ import streamlit as st
 # プロジェクトのルートディレクトリをパスに追加
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
-from src.scrapers import (get_recipe_info_from_delishkitchen,
-                          get_recipe_info_from_kurashiru)
-from src.utils import (extract_people_count, format_ingredient_summary,
-                       parse_ingredient)
+from src.scrapers import get_recipe_info_from_delishkitchen, get_recipe_info_from_kurashiru
+from src.utils import extract_people_count, format_ingredient_summary, parse_ingredient
 from src.utils.sheet_utils import write_to_spreadsheet
 
 
