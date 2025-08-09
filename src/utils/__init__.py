@@ -2,8 +2,7 @@
 Utils package - ユーティリティ関数群
 """
 
-from .ingredient_utils import (combine_ingredients, format_ingredient_summary,
-                               parse_ingredient)
+from .ingredient_utils import combine_ingredients, format_ingredient_summary, parse_ingredient
 from .recipe_utils import extract_people_count
 
 # sheet_utilsは動的インポートにして依存関係エラーを回避
