@@ -4,21 +4,21 @@ Delish Kitchen scraper - デリッシュキッチンからレシピ情報を取�
 
 import requests
 from bs4 import BeautifulSoup
-from typing import Optional, Dict, List
+from typing import Optional, Dict, Any
 
 
-def get_recipe_info_from_delishkitchen(url: str) -> Optional[Dict[str, any]]:
+def get_recipe_info_from_delishkitchen(url: str) -> Optional[Dict[str, Any]]:
     """
     デリッシュキッチンのレシピURLから材料情報と人数情報を取得する
-    
+
     Args:
         url (str): デリッシュキッチンのレシピURL
-        
+
     Returns:
         Optional[Dict[str, any]]: レシピ情報（材料リストと人数）、失敗時はNone
     """
     headers = {"User-Agent": "Mozilla/5.0"}
-    
+
     try:
         res = requests.get(url, headers=headers, timeout=10)
         if res.status_code != 200:
@@ -44,11 +44,8 @@ def get_recipe_info_from_delishkitchen(url: str) -> Optional[Dict[str, any]]:
         if yield_elem:
             yield_info = yield_elem.text.strip()
 
-        return {
-            "ingredients": ingredients,
-            "yield": yield_info
-        }
-        
+        return {"ingredients": ingredients, "yield": yield_info}
+
     except requests.RequestException as e:
         print(f"リクエストエラー: {e}")
         return None

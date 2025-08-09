@@ -5,18 +5,19 @@
 import streamlit as st
 import sys
 import os
+from collections import defaultdict
+from typing import List, Tuple, Dict
 
 # プロジェクトのルートディレクトリをパスに追加
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 from src.scrapers import get_recipe_info_from_kurashiru, get_recipe_info_from_delishkitchen
 from src.utils import (
-    parse_ingredient, combine_ingredients, format_ingredient_summary,
-    extract_people_count
+    parse_ingredient,
+    format_ingredient_summary,
+    extract_people_count,
 )
 from src.utils.sheet_utils import write_to_spreadsheet
-from collections import defaultdict
-from typing import List, Tuple
 
 
 def initialize_session_state() -> None:
@@ -37,12 +38,14 @@ def collect_recipe_inputs() -> Tuple[List[str], List[int], List[str]]:
 
     for i in range(st.session_state.recipe_count):
         st.markdown(f"### 🍽️ レシピ #{i+1}")
-        name = st.text_input(f"料理名", key=f"recipe_title_{i}")
+        name = st.text_input("料理名", key=f"recipe_title_{i}")
         cols = st.columns(2)
         with cols[0]:
-            url = st.text_input(f"レシピURL ", key=f"url_{i}")
+            url = st.text_input("レシピURL ", key=f"url_{i}")
         with cols[1]:
-            people = st.number_input(f"作りたい人数 ", min_value=1, step=1, value=2, key=f"people_{i}")
+            people = st.number_input(
+                "作りたい人数 ", min_value=1, step=1, value=2, key=f"people_{i}"
+            )
 
         if url:
             recipe_urls.append(url)
@@ -54,8 +57,8 @@ def collect_recipe_inputs() -> Tuple[List[str], List[int], List[str]]:
 
 def process_recipes(recipe_urls: List[str], num_people: List[int]) -> Tuple[List[str], List[str]]:
     """レシピを処理して材料リストを生成"""
-    all_combined = defaultdict(float)
-    extra_ingredients = []
+    all_combined: Dict[Tuple[str, str], float] = defaultdict(float)
+    extra_ingredients: List[str] = []
 
     for url, target in zip(recipe_urls, num_people):
         try:
@@ -90,7 +93,9 @@ def process_recipes(recipe_urls: List[str], num_people: List[int]) -> Tuple[List
     return combined_list, extra_ingredients
 
 
-def render_ingredient_editor(combined_list: List[str], extra_ingredients: List[str]) -> Tuple[List[List[str]], List[str]]:
+def render_ingredient_editor(
+    combined_list: List[str], extra_ingredients: List[str]
+) -> Tuple[List[List[str]], List[str]]:
     """材料編集UIを表示"""
     st.subheader("✅ スプレッドシートに出力する材料を選んで編集")
 
@@ -125,14 +130,10 @@ def render_ingredient_editor(combined_list: List[str], extra_ingredients: List[s
     return editable_items, selected_extras
 
 
-def main():
+def main() -> None:
     """メイン関数"""
-    st.set_page_config(
-        page_title="材料リスト作成ツール",
-        page_icon="🍳",
-        layout="wide"
-    )
-    
+    st.set_page_config(page_title="材料リスト作成ツール", page_icon="🍳", layout="wide")
+
     st.title("🍳 材料リスト作成ツール")
     st.write(
         "レシピのURLを入力すると、必要な材料のリストを作成します。"
@@ -175,8 +176,7 @@ def main():
     # 材料表示と編集
     if st.session_state.get("show_editor", False):
         editable_items, selected_extras = render_ingredient_editor(
-            st.session_state["combined_list"],
-            st.session_state["extra_ingredients"]
+            st.session_state["combined_list"], st.session_state["extra_ingredients"]
         )
 
         if sheet_url and st.button("📤 この内容でスプレッドシートに出力する", key="submit_button"):

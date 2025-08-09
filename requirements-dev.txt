@@ -15,3 +15,4 @@ isort>=5.10.0
 
 # 型チェック用
 types-requests
+types-beautifulsoup4

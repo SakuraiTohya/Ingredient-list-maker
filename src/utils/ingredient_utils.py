@@ -11,24 +11,24 @@ from typing import Tuple, Optional, Dict, List
 def convert_mixed_number(s: str) -> Optional[float]:
     """
     '2と1/2', '1/3', '1.5' などを float に変換
-    
+
     Args:
         s (str): 変換する文字列
-        
+
     Returns:
         Optional[float]: 変換された数値、変換失敗時はNone
     """
-    s = s.replace('．', '.').replace('・', '/').replace('／', '/').strip()
+    s = s.replace("．", ".").replace("・", "/").replace("／", "/").strip()
 
     # 例: "2と1/2"
-    match = re.match(r'(\d+)\s*と\s*(\d+)/(\d+)', s)
+    match = re.match(r"(\d+)\s*と\s*(\d+)/(\d+)", s)
     if match:
         whole = int(match.group(1))
         frac = Fraction(int(match.group(2)), int(match.group(3)))
         return float(whole + frac)
 
     # 例: "1/2"
-    match = re.match(r'(\d+)/(\d+)', s)
+    match = re.match(r"(\d+)/(\d+)", s)
     if match:
         return float(Fraction(int(match.group(1)), int(match.group(2))))
 
@@ -42,10 +42,10 @@ def convert_mixed_number(s: str) -> Optional[float]:
 def parse_ingredient(item: str) -> Tuple[str, Optional[float], str]:
     """
     材料文字列を解析して名前、分量、単位に分離
-    
+
     Args:
         item (str): 材料の文字列（例: '醤油 大さじ1.5'）
-        
+
     Returns:
         Tuple[str, Optional[float], str]: (材料名, 分量, 単位)
     """
@@ -67,19 +67,20 @@ def parse_ingredient(item: str) -> Tuple[str, Optional[float], str]:
         return str(item).strip(), None, ""
 
 
-def combine_ingredients(parsed_ingredients: List[Tuple[str, Optional[float], str]], 
-                       multiplier: float = 1.0) -> Dict[Tuple[str, str], float]:
+def combine_ingredients(
+    parsed_ingredients: List[Tuple[str, Optional[float], str]], multiplier: float = 1.0
+) -> Dict[Tuple[str, str], float]:
     """
     解析済み材料リストを結合して合計分量を計算
-    
+
     Args:
         parsed_ingredients: 解析済み材料のリスト
         multiplier: 人数倍率
-        
+
     Returns:
         Dict[Tuple[str, str], float]: (材料名, 単位) -> 合計分量の辞書
     """
-    result = defaultdict(float)
+    result: Dict[Tuple[str, str], float] = defaultdict(float)
     for name, amount, unit in parsed_ingredients:
         if amount is None:
             continue
@@ -90,10 +91,10 @@ def combine_ingredients(parsed_ingredients: List[Tuple[str, Optional[float], str
 def format_ingredient_summary(combined: Dict[Tuple[str, str], float]) -> List[str]:
     """
     結合された材料辞書を表示用文字列リストに変換
-    
+
     Args:
         combined: 結合された材料辞書
-        
+
     Returns:
         List[str]: フォーマット済み材料リスト
     """

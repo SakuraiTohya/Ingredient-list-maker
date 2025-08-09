@@ -18,8 +18,13 @@ extend-exclude = '''
 )/
 '''
 
+[tool.flake8]
+max-line-length = 100
+ignore = "E203,W503,E402"
+exclude = ".git,__pycache__,.venv,.eggs,*.egg"
+
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
